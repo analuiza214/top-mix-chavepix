@@ -333,6 +333,52 @@ export const products: Product[] = [
         photo: "/images/rev-dep-amarelo-1.webp"
       }
     ]
+  },
+  {
+    id: "prod-7",
+    slug: "kit-650-figurinhas",
+    name: "Kit 650 Figurinhas Copa 2026",
+    price: 69.90,
+    originalPrice: 139.90,
+    installment: "5x R$ 13,98 sem juros",
+    pixPrice: 62.91,
+    rating: 4.9,
+    reviewCount: 203,
+    soldCount: "+500 vendidos",
+    badge: "MAIOR KIT DE FIGURINHAS",
+    description: "Super kit com 650 figurinhas (93 envelopes) do álbum Copa do Mundo 2026. O maior kit de figurinhas disponível para completar seu álbum! Produto 100% original Panini.",
+    mainImage: "/images/sugg-3.webp",
+    gallery: ["/images/sugg-3.webp", "/images/slide-2.webp", "/images/slide-3.webp"],
+    features: ["93 envelopes lacrados", "650 figurinhas originais Panini", "Maior kit de figurinhas", "Frete grátis FULL", "Ideal para completar o álbum"],
+    productReviews: [
+      {
+        id: 1,
+        author: "Roberto Silveira",
+        rating: 5,
+        text: "Maior kit que já comprei! Com 650 figurinhas deu pra completar quase o álbum inteiro de uma vez. Todas originais Panini, pacotes lacrados e entrega super rápida. Vale cada centavo!"
+      },
+      {
+        id: 2,
+        author: "Daniela Moura",
+        rating: 5,
+        text: "Comprei para dividir com meu irmão e deu super certo! 93 pacotes renderam muitas figurinhas boas e pouquíssimas repetidas. Produto 100% original e chegou em 3 dias. Melhor compra!",
+        photo: "/images/rev-8a.webp"
+      },
+      {
+        id: 3,
+        author: "Vinícius Almeida",
+        rating: 5,
+        text: "Simplesmente o melhor custo-benefício! 650 figurinhas por esse preço é imbatível. Saíram várias douradas e especiais. Entrega rápida, tudo lacrado e original. Super recomendo!",
+        photos: ["/images/rev-11a.webp", "/images/rev-11b.webp"]
+      },
+      {
+        id: 4,
+        author: "Larissa Fernandes",
+        rating: 5,
+        text: "Kit absurdo de grande! Comprei pro meu filho e ele ficou dias abrindo os pacotes. As figurinhas são 100% originais Panini, qualidade impecável. Chegou tudo certo e bem embalado. Nota mil!",
+        photo: "/images/rev-9.webp"
+      }
+    ]
   }
 ];
 
