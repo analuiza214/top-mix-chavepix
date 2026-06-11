@@ -347,8 +347,8 @@ export const products: Product[] = [
     soldCount: "+500 vendidos",
     badge: "MAIOR KIT DE FIGURINHAS",
     description: "Super kit com 650 figurinhas (93 envelopes) do álbum Copa do Mundo 2026. O maior kit de figurinhas disponível para completar seu álbum! Produto 100% original Panini.",
-    mainImage: "/images/sugg-3.webp",
-    gallery: ["/images/sugg-3.webp", "/images/slide-2.webp", "/images/slide-3.webp"],
+    mainImage: "/images/650figurinhas.png",
+    gallery: ["/images/650figurinhas.png", "/images/figurinhascard1.png", "/images/figurinhascard2.png", "/images/figurinhascard3.png"],
     features: ["93 envelopes lacrados", "650 figurinhas originais Panini", "Maior kit de figurinhas", "Frete grátis FULL", "Ideal para completar o álbum"],
     productReviews: [
       {
