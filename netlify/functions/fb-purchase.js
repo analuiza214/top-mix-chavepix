@@ -2,7 +2,8 @@ const https = require("https");
 const crypto = require("crypto");
 
 function hash(str) {
-  return crypto.createHash("sha256").update(str.trim().toLowerCase()).digest("hex");
+  if (!str) return undefined;
+  return crypto.createHash("sha256").update(String(str).trim().toLowerCase()).digest("hex");
 }
 
 exports.handler = async (event) => {
@@ -11,20 +12,14 @@ exports.handler = async (event) => {
     "Content-Type": "application/json",
   };
 
-  if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 204, headers, body: "" };
-  }
-
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, headers, body: JSON.stringify({ error: "POST only" }) };
-  }
+  if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers, body: "" };
+  if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: JSON.stringify({ error: "POST only" }) };
 
   const FB_PIXEL_ID = process.env.FB_PIXEL_ID;
   const FB_ACCESS_TOKEN = process.env.FB_ACCESS_TOKEN;
 
-  if (!FB_PIXEL_ID || !FB_ACCESS_TOKEN) {
+  if (!FB_PIXEL_ID || !FB_ACCESS_TOKEN)
     return { statusCode: 500, headers, body: JSON.stringify({ error: "Pixel nao configurado" }) };
-  }
 
   let payload;
   try { payload = JSON.parse(event.body || "{}"); }
@@ -38,10 +33,12 @@ exports.handler = async (event) => {
       event_time: Math.floor(Date.now() / 1000),
       action_source: "website",
       user_data: {
-        em: user_data?.em ? [hash(user_data.em[0])] : undefined,
-        ph: user_data?.ph || undefined,
-        fn: user_data?.fn || undefined,
-        ln: user_data?.ln || undefined,
+        em: user_data?.em?.[0] ? [hash(user_data.em[0])] : undefined,
+        ph: user_data?.ph?.[0] ? [hash(user_data.ph[0])] : undefined,
+        fn: user_data?.fn?.[0] ? [hash(user_data.fn[0])] : undefined,
+        ln: user_data?.ln?.[0] ? [hash(user_data.ln[0])] : undefined,
+        fbc: user_data?.fbc || undefined,
+        fbp: user_data?.fbp || undefined,
       },
       custom_data: custom_data || {},
     }],
