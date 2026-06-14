@@ -166,8 +166,20 @@ export default function Checkout() {
     if (paymentMethod === "card") {
       if (!luhn(card.numero)) errors.cardNumero = "Número de cartão inválido";
       if (!card.nome.trim()) errors.cardNome = "Obrigatório";
-      if (card.validade.length < 5) errors.cardValidade = "Inválida";
-      if (card.cvv.length < 3) errors.cardCvv = "Inválido";
+      if (card.validade.length < 5) {
+        errors.cardValidade = "Data inválida";
+      } else {
+        const [mm, yy] = card.validade.split("/").map(Number);
+        const now = new Date();
+        const curYear = now.getFullYear() % 100;
+        const curMonth = now.getMonth() + 1;
+        if (!mm || mm < 1 || mm > 12) {
+          errors.cardValidade = "Mês inválido (01–12)";
+        } else if (yy < curYear || (yy === curYear && mm < curMonth)) {
+          errors.cardValidade = "Cartão vencido";
+        }
+      }
+      if (card.cvv.length < 3) errors.cardCvv = "CVV deve ter 3 dígitos";
     }
 
     setFormErrors(errors);
@@ -648,9 +660,9 @@ export default function Checkout() {
                           <div className="space-y-1.5">
                             <Label className="text-xs font-semibold text-gray-700">CVV *</Label>
                             <Input
-                              placeholder="123" type="password" maxLength={4}
+                              placeholder="123" type="password" maxLength={3}
                               value={card.cvv}
-                              onChange={e => setCard(c => ({ ...c, cvv: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
+                              onChange={e => setCard(c => ({ ...c, cvv: e.target.value.replace(/\D/g, "").slice(0, 3) }))}
                               className={`h-11 text-sm bg-white ${formErrors.cardCvv ? "border-red-400" : ""}`}
                             />
                             {formErrors.cardCvv && <p className="text-xs text-red-500">{formErrors.cardCvv}</p>}
