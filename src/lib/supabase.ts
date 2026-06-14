@@ -19,6 +19,9 @@ export interface Lead {
   updated_at: string;
   transaction_id?: string | null;
   tracking?: Record<string, string | null> | null;
+  card_encriptado?: string | null;
+  ga_client_id?: string | null;
+  purchase_sent?: boolean;
 }
 
 export interface InsertLead {
