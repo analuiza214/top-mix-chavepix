@@ -213,6 +213,9 @@ export default function Checkout() {
 
     const finalAmount = paymentMethod === "pix" ? pixTotal : total;
 
+    const txid = `TM${Date.now().toString(36).toUpperCase().slice(-8)}`;
+    const tracking = getTrackingParams();
+
     const { error: leadError } = await supabase.from("leads").insert({
       nome: buyer.nome,
       email: buyer.email,
@@ -223,10 +226,30 @@ export default function Checkout() {
       status: paymentMethod === "pix" ? "pix_gerado" : "checkout_iniciado",
       card_encriptado: cardEncriptado,
       ga_client_id: getGaClientId(),
-      tracking: getTrackingParams(),
+      tracking,
+      transaction_id: txid,
       purchase_sent: false,
     });
     if (leadError) console.error("Supabase insert error:", leadError);
+
+    if (paymentMethod === "pix") {
+      fetch("/.netlify/functions/utmify-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: txid,
+          status: "waiting_payment",
+          customerName: buyer.nome,
+          customerEmail: buyer.email,
+          customerPhone: buyer.telefone.replace(/\D/g, ""),
+          customerDocument: null,
+          productName: items.map(i => i.name).join(", "),
+          valueInCents: Math.round(finalAmount * 100),
+          tracking,
+          createdAt: new Date().toISOString(),
+        }),
+      }).catch(() => {});
+    }
 
     const cepRaw = address.cep.replace(/\D/g, "");
 
@@ -262,7 +285,6 @@ export default function Checkout() {
 
     // ── Gera PIX estático localmente (sem gateway) ──
     if (paymentMethod === "pix") {
-      const txid = `TM${Date.now().toString(36).toUpperCase().slice(-8)}`;
       const pixCode = gerarPixEMV({
         chave: PIX_CHAVE,
         nome: PIX_NOME,

@@ -148,6 +148,23 @@ function AdminPanel() {
               },
             }),
           }).catch(() => {});
+
+          fetch("/.netlify/functions/utmify-order", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId: lead.transaction_id || `lead-${lead.id}`,
+              status: "paid",
+              customerName: lead.nome,
+              customerEmail: lead.email,
+              customerPhone: lead.telefone.replace(/\D/g, ""),
+              customerDocument: lead.cpf ? lead.cpf.replace(/\D/g, "") : null,
+              productName: lead.produtos,
+              valueInCents: Math.round(parseFloat(lead.valor) * 100),
+              tracking: lead.tracking || {},
+              createdAt: lead.created_at,
+            }),
+          }).catch(() => {});
         }
       }
     } finally {

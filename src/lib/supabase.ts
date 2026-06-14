@@ -17,6 +17,8 @@ export interface Lead {
   status: string;
   created_at: string;
   updated_at: string;
+  transaction_id?: string | null;
+  tracking?: Record<string, string | null> | null;
 }
 
 export interface InsertLead {
