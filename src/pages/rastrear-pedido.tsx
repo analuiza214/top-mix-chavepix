@@ -45,13 +45,13 @@ function gerarEtapas(codigo: string) {
   const MIN_SEPARACAO = 30;
   const MIN_EMBALAGEM = 55;   // 30 + 25
   const MIN_TRANSITO  = 175;  // 55 + 120 (2h)
-  const MIN_SAIU      = 3 * 24 * 60; // 3 dias
+  const MIN_SAIU      = 2 * 24 * 60; // 2 dias
 
   const tSeparacao = new Date(origem.getTime() + MIN_SEPARACAO * 60 * 1000);
   const tEmbalagem = new Date(origem.getTime() + MIN_EMBALAGEM * 60 * 1000);
   const tTransito  = new Date(origem.getTime() + MIN_TRANSITO  * 60 * 1000);
   const tSaiu      = new Date(origem.getTime() + MIN_SAIU      * 60 * 1000);
-  const tEntrega   = addDays(origem, 4); // previsão de entrega
+  const tEntrega   = addDays(origem, 2); // previsão de entrega
 
   const fmtPrev = (d: Date) =>
     `Previsão: ${d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}`;
