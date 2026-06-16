@@ -17,33 +17,41 @@ function addDays(date: Date, days: number): Date {
 }
 
 // ── Recupera ou cria a data de origem do pedido (persistida por código) ───────
+// A origem é o momento EXATO em que a pessoa rastreou pela primeira vez.
 function getDataOrigem(codigo: string): Date {
   const key = `tm_rastreio_${codigo.toUpperCase()}`;
   const salvo = localStorage.getItem(key);
   if (salvo) {
     return new Date(parseInt(salvo, 10));
   }
-  // Primeira vez: simula pedido feito entre 4h e 8h atrás (variação por código)
-  const seed = codigo.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const horas = 4 + (seed % 5); // 4h a 8h atrás
-  const origem = new Date(Date.now() - horas * 60 * 60 * 1000);
+  // Primeira vez: registra agora como ponto de partida
+  const origem = new Date();
   localStorage.setItem(key, origem.getTime().toString());
   return origem;
 }
 
-// ── Gera linha do tempo baseada no tempo real decorrido desde o pedido ────────
+// ── Gera linha do tempo baseada no tempo real decorrido desde o 1º rastreio ──
+// Cronograma:
+//   +0 min  → Pedido Confirmado   ✅ (imediato)
+//   +30 min → Em Separação
+//   +55 min → Em Embalagem        (30 + 25)
+//   +175 min → Enviado/Em Trânsito (55 + 120)
+//   +3 dias → Saiu para Entrega
 function gerarEtapas(codigo: string) {
   const origem = getDataOrigem(codigo);
   const agora  = new Date();
-  const hDecorridas = (agora.getTime() - origem.getTime()) / (1000 * 60 * 60);
+  const minDecorridos = (agora.getTime() - origem.getTime()) / (1000 * 60);
 
-  // Marcos fixos a partir da origem
-  const confirmado = origem;
-  const separacao  = new Date(origem.getTime() + 2  * 60 * 60 * 1000); // +2h
-  const embalagem  = new Date(origem.getTime() + 5  * 60 * 60 * 1000); // +5h
-  const envio      = new Date(origem.getTime() + 24 * 60 * 60 * 1000); // +1 dia
-  const saiu       = new Date(origem.getTime() + 72 * 60 * 60 * 1000); // +3 dias
-  const entrega    = addDays(origem, 4);                                // previsão +4 dias
+  const MIN_SEPARACAO = 30;
+  const MIN_EMBALAGEM = 55;   // 30 + 25
+  const MIN_TRANSITO  = 175;  // 55 + 120 (2h)
+  const MIN_SAIU      = 3 * 24 * 60; // 3 dias
+
+  const tSeparacao = new Date(origem.getTime() + MIN_SEPARACAO * 60 * 1000);
+  const tEmbalagem = new Date(origem.getTime() + MIN_EMBALAGEM * 60 * 1000);
+  const tTransito  = new Date(origem.getTime() + MIN_TRANSITO  * 60 * 1000);
+  const tSaiu      = new Date(origem.getTime() + MIN_SAIU      * 60 * 1000);
+  const tEntrega   = addDays(origem, 4); // previsão de entrega
 
   const fmtPrev = (d: Date) =>
     `Previsão: ${d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}`;
@@ -53,49 +61,49 @@ function gerarEtapas(codigo: string) {
       {
         icone: CheckCircle,
         label: "Pedido Confirmado",
-        descricao: "Pagamento recebido e pedido registrado.",
-        data: fmt(confirmado),
+        descricao: "Pagamento recebido e pedido registrado com sucesso.",
+        data: fmt(origem),
         ok: true,
       },
       {
         icone: Box,
         label: "Em Separação",
         descricao: "Seu produto está sendo separado no estoque.",
-        data: hDecorridas >= 2 ? fmt(separacao) : fmtPrev(separacao),
-        ok: hDecorridas >= 2,
+        data: minDecorridos >= MIN_SEPARACAO ? fmt(tSeparacao) : fmtPrev(tSeparacao),
+        ok: minDecorridos >= MIN_SEPARACAO,
       },
       {
         icone: Package,
         label: "Em Embalagem",
         descricao: "O produto está sendo embalado com cuidado para envio.",
-        data: hDecorridas >= 5 ? fmt(embalagem) : fmtPrev(embalagem),
-        ok: hDecorridas >= 5,
+        data: minDecorridos >= MIN_EMBALAGEM ? fmt(tEmbalagem) : fmtPrev(tEmbalagem),
+        ok: minDecorridos >= MIN_EMBALAGEM,
       },
       {
         icone: Truck,
         label: "Enviado / Em Trânsito",
         descricao: "Pedido entregue aos Correios e a caminho de você.",
-        data: hDecorridas >= 24 ? fmt(envio) : fmtPrev(envio),
-        ok: hDecorridas >= 24,
+        data: minDecorridos >= MIN_TRANSITO ? fmt(tTransito) : fmtPrev(tTransito),
+        ok: minDecorridos >= MIN_TRANSITO,
       },
       {
         icone: MapPin,
         label: "Saiu para Entrega",
         descricao: "O pedido está com o entregador e chegará em breve.",
-        data: hDecorridas >= 72 ? fmt(saiu) : fmtPrev(entrega),
-        ok: hDecorridas >= 72,
+        data: minDecorridos >= MIN_SAIU ? fmt(tSaiu) : fmtPrev(tEntrega),
+        ok: minDecorridos >= MIN_SAIU,
       },
     ],
-    previsao: entrega.toLocaleDateString("pt-BR", {
+    previsao: tEntrega.toLocaleDateString("pt-BR", {
       day: "2-digit", month: "long", year: "numeric"
     }),
-    status: hDecorridas >= 72
+    status: minDecorridos >= MIN_SAIU
       ? "🚚 Saiu para Entrega"
-      : hDecorridas >= 24
+      : minDecorridos >= MIN_TRANSITO
       ? "🚛 Em Trânsito"
-      : hDecorridas >= 5
+      : minDecorridos >= MIN_EMBALAGEM
       ? "📦 Em Embalagem"
-      : hDecorridas >= 2
+      : minDecorridos >= MIN_SEPARACAO
       ? "🔍 Em Separação"
       : "✅ Confirmado",
   };
