@@ -16,13 +16,37 @@ function addDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
 }
 
-// ── Gera linha do tempo a partir do momento atual (lógica retroativa) ────────
-function gerarEtapas(agora: Date) {
-  // Simula como se o pedido tivesse sido feito 5h atrás
-  const confirmado = new Date(agora.getTime() - 5 * 60 * 60 * 1000);  // 5h atrás → Confirmado
-  const separacao  = new Date(agora.getTime() - 3 * 60 * 60 * 1000);  // 3h atrás → Em Separação
-  const embalagem  = new Date(agora.getTime() - 1 * 60 * 60 * 1000);  // 1h atrás → Em Embalagem
-  const entrega    = addDays(agora, 3);                                 // +3 dias  → Previsão entrega
+// ── Recupera ou cria a data de origem do pedido (persistida por código) ───────
+function getDataOrigem(codigo: string): Date {
+  const key = `tm_rastreio_${codigo.toUpperCase()}`;
+  const salvo = localStorage.getItem(key);
+  if (salvo) {
+    return new Date(parseInt(salvo, 10));
+  }
+  // Primeira vez: simula pedido feito entre 4h e 8h atrás (variação por código)
+  const seed = codigo.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const horas = 4 + (seed % 5); // 4h a 8h atrás
+  const origem = new Date(Date.now() - horas * 60 * 60 * 1000);
+  localStorage.setItem(key, origem.getTime().toString());
+  return origem;
+}
+
+// ── Gera linha do tempo baseada no tempo real decorrido desde o pedido ────────
+function gerarEtapas(codigo: string) {
+  const origem = getDataOrigem(codigo);
+  const agora  = new Date();
+  const hDecorridas = (agora.getTime() - origem.getTime()) / (1000 * 60 * 60);
+
+  // Marcos fixos a partir da origem
+  const confirmado = origem;
+  const separacao  = new Date(origem.getTime() + 2  * 60 * 60 * 1000); // +2h
+  const embalagem  = new Date(origem.getTime() + 5  * 60 * 60 * 1000); // +5h
+  const envio      = new Date(origem.getTime() + 24 * 60 * 60 * 1000); // +1 dia
+  const saiu       = new Date(origem.getTime() + 72 * 60 * 60 * 1000); // +3 dias
+  const entrega    = addDays(origem, 4);                                // previsão +4 dias
+
+  const fmtPrev = (d: Date) =>
+    `Previsão: ${d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}`;
 
   return {
     etapas: [
@@ -37,34 +61,43 @@ function gerarEtapas(agora: Date) {
         icone: Box,
         label: "Em Separação",
         descricao: "Seu produto está sendo separado no estoque.",
-        data: fmt(separacao),
-        ok: true,
+        data: hDecorridas >= 2 ? fmt(separacao) : fmtPrev(separacao),
+        ok: hDecorridas >= 2,
       },
       {
         icone: Package,
         label: "Em Embalagem",
         descricao: "O produto está sendo embalado com cuidado para envio.",
-        data: fmt(embalagem),
-        ok: true,
+        data: hDecorridas >= 5 ? fmt(embalagem) : fmtPrev(embalagem),
+        ok: hDecorridas >= 5,
       },
       {
         icone: Truck,
         label: "Enviado / Em Trânsito",
         descricao: "Pedido entregue aos Correios e a caminho de você.",
-        data: `Previsão: ${entrega.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}`,
-        ok: false,
+        data: hDecorridas >= 24 ? fmt(envio) : fmtPrev(envio),
+        ok: hDecorridas >= 24,
       },
       {
         icone: MapPin,
         label: "Saiu para Entrega",
         descricao: "O pedido está com o entregador e chegará em breve.",
-        data: `Previsão: ${entrega.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}`,
-        ok: false,
+        data: hDecorridas >= 72 ? fmt(saiu) : fmtPrev(entrega),
+        ok: hDecorridas >= 72,
       },
     ],
     previsao: entrega.toLocaleDateString("pt-BR", {
       day: "2-digit", month: "long", year: "numeric"
     }),
+    status: hDecorridas >= 72
+      ? "🚚 Saiu para Entrega"
+      : hDecorridas >= 24
+      ? "🚛 Em Trânsito"
+      : hDecorridas >= 5
+      ? "📦 Em Embalagem"
+      : hDecorridas >= 2
+      ? "🔍 Em Separação"
+      : "✅ Confirmado",
   };
 }
 
@@ -95,7 +128,7 @@ export default function RastrearPedido() {
     setTimeout(() => {
       setLoading(false);
       setCodigoExibido(cod.toUpperCase());
-      setResultado(gerarEtapas(new Date()));
+      setResultado(gerarEtapas(cod.toUpperCase()));
     }, 1200);
   }
 
@@ -149,7 +182,7 @@ export default function RastrearPedido() {
                 <p className="font-black text-lg text-gray-900">{codigoExibido}</p>
               </div>
               <span className="text-xs font-black px-3 py-1.5 rounded-full bg-yellow-100 text-yellow-700">
-                📦 Em Processamento
+                {resultado.status}
               </span>
             </div>
 
